@@ -83,7 +83,8 @@ class UsersResource(Resource):
             try:
                 new_user = User(
                     name=data['name'],
-                    email=data['email']
+                    email=data['email'],
+                    password=data['password']
                 )
                 db.session.add(new_user)
                 db.session.commit()

@@ -28,8 +28,8 @@ class User(db.Model, SerializerMixin):
     email = db.Column(db.String(100), unique=True, nullable=False)
     _password_hash = db.Column('password_hash', db.String(128), nullable=False)
     
-    tasks = db.relationship('Task', backref='user', lazy=True)
-    assignments = db.relationship('Assignment', backref='user', lazy=True)
+    tasks = db.relationship('Task', backref='user', lazy=True, cascade='all, delete-orphan')
+    assignments = db.relationship('Assignment', backref='user', lazy=True, cascade='all, delete-orphan')
     
     serialize_rules = ('-tasks.user', '-assignments.user', '-password_hash')
 
@@ -65,7 +65,7 @@ class Task(db.Model, SerializerMixin):
     due_date = db.Column(db.Date, nullable=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     
-    assignments = db.relationship('Assignment', backref='task', lazy=True)
+    assignments = db.relationship('Assignment', backref='task', lazy=True, cascade='all, delete-orphan')
     
     serialize_rules = ('-user.tasks', '-assignments.task', '-assignments.user')
 
