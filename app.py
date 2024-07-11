@@ -3,15 +3,17 @@ import os
 
 
 from sqlite3 import IntegrityError
-from models import db, Task, User, Assignment
+
+from models import db, Task, User, Assignment, bcrypt
 from flask_migrate import Migrate
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, session
 from flask_restful import Api, Resource
 from datetime import datetime
 from flask_cors import CORS
 
 from dotenv import load_dotenv
 load_dotenv()
+
 
 app = Flask(__name__)
 app.secret_key = b'Y\xf1Xz\x00\xad|eQ\x80t \xca\x1a\x10K'
@@ -26,31 +28,70 @@ db.init_app(app)
 CORS(app)
 
 api = Api(app)
+bcrypt.init_app(app)
 
 
 @app.route("/")
 def index():
     return "<h1>Task Management App</h1>"
 
+class CheckSession(Resource):
+    def get(self):
+        
+        user_id = session['user_id']
+        if user_id:
+            user = User.query.filter(User.id == user_id).first()
+            return user.to_dict(), 200
+        
+        return {}, 401
+
+class Login(Resource):
+    def post(self):
+
+        request_json = request.get_json()
+
+        email = request_json.get('email')
+        password = request_json.get('password')
+
+        user = User.query.filter(User.email == email).first()
+
+        if user:
+            if user.authenticate(password):
+
+                session['user_id'] = user.id
+                return user.to_dict(), 200
+
+        return {'error': '401 Unauthorized'}, 401
+    
+class Logout(Resource):
+    def delete(self):
+        if session['user_id']:
+            session['user_id'] = None
+            return {}, 204
+        return {'error': 'Unauthorized'}, 401
+
 class UsersResource(Resource):
     def get(self):
         users = User.query.all()
         return [user.to_dict(only=('id', 'name', 'email')) for user in users], 200
+        
 
     def post(self):
         data = request.get_json()
-        try:
-            new_user = User(
-                name=data['name'],
-                email=data['email']
-            )
-            db.session.add(new_user)
-            db.session.commit()
-            return new_user.to_dict(), 201
-        except Exception as e:
-            db.session.rollback()
-            return {"errors": [str(e)]}, 400
-
+        user_id = session.get('user_id')
+        if user_id:
+            try:
+                new_user = User(
+                    name=data['name'],
+                    email=data['email']
+                )
+                db.session.add(new_user)
+                db.session.commit()
+                return new_user.to_dict(), 201
+            except Exception as e:
+                db.session.rollback()
+                return {"errors": [str(e)]}, 400
+        return {'error': 'Unauthorized'}, 401
 class UserResource(Resource):
     def get(self, id):
         user = db.session.get(User, id)
@@ -152,7 +193,9 @@ class AssignmentsResource(Resource):
         except Exception as e:
             db.session.rollback()
             return {"errors": [str(e)]}, 400
-
+api.add_resource(CheckSession, '/check_session', endpoint='check_session')
+api.add_resource(Login, '/login', endpoint='login')
+api.add_resource(Logout, '/logout', endpoint='logout')
 api.add_resource(UsersResource, '/users')
 api.add_resource(UserResource, '/users/<int:id>')   
 api.add_resource(TasksResource, '/tasks')

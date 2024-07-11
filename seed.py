@@ -1,8 +1,12 @@
 from random import randint, choice as rc
 from faker import Faker
 
+from flask_bcrypt import Bcrypt
+
 from app import app
 from models import db, User, Task, Assignment
+
+bcrypt = Bcrypt()
 
 fake = Faker()
 
@@ -24,11 +28,15 @@ with app.app_context():
         while email in emails:
             email = fake.email()
         emails.append(email)
+        password ='password'
+        
+        password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
 
         user = User(
             name=fake.name(),
-            email=email
+            email=email,
         )
+        user.password_hash = password_hash 
 
         users.append(user)
 
