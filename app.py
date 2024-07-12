@@ -78,21 +78,19 @@ class UsersResource(Resource):
 
     def post(self):
         data = request.get_json()
-        user_id = session.get('user_id')
-        if user_id:
-            try:
-                new_user = User(
-                    name=data['name'],
-                    email=data['email'],
-                    password=data['password']
-                )
-                db.session.add(new_user)
-                db.session.commit()
-                return new_user.to_dict(), 201
-            except Exception as e:
-                db.session.rollback()
-                return {"errors": [str(e)]}, 400
-        return {'error': 'Unauthorized'}, 401
+        try:
+            new_user = User(
+                name=data['name'],
+                email=data['email'],
+                password=data['password']
+            )
+            db.session.add(new_user)
+            db.session.commit()
+            return new_user.to_dict(), 201
+        except Exception as e:
+            db.session.rollback()
+            return {"errors": [str(e)]}, 400
+
 class UserResource(Resource):
     def get(self, id):
         user = db.session.get(User, id)
