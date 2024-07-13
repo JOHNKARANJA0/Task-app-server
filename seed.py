@@ -36,7 +36,7 @@ with app.app_context():
             name=fake.name(),
             email=email,
         )
-        user.password_hash = password_hash 
+        user._password_hash = password_hash 
 
         users.append(user)
 

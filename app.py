@@ -17,7 +17,7 @@ load_dotenv()
 
 app = Flask(__name__)
 app.secret_key = b'Y\xf1Xz\x00\xad|eQ\x80t \xca\x1a\x10K'
-app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('DATABASE_URI')
+app.config['SQLALCHEMY_DATABASE_URI'] =os.environ.get('DATABASE_URI')
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 app.json.compact = False
 
@@ -53,13 +53,14 @@ class Login(Resource):
         email = request_json.get('email')
         password = request_json.get('password')
 
-        user = User.query.filter(User.email == email).first()
+        user = User.query.filter_by(email = email).first()
 
         if user:
             if user.authenticate(password):
-
                 session['user_id'] = user.id
-                return user.to_dict(), 200
+                return user.to_dict(only=('id', 'name', 'email')), 200
+            else:
+                return "Wrong password"
 
         return {'error': '401 Unauthorized'}, 401
     
@@ -79,19 +80,22 @@ class UsersResource(Resource):
     def post(self):
         data = request.get_json()
         password ='password'
-        try:
-            password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
-            new_user = User(
-                name=data['name'],
-                email=data['email']
-            )
-            new_user.password_hash = password_hash 
-            db.session.add(new_user)
-            db.session.commit()
-            return new_user.to_dict(only=('id', 'name', 'email')), 201
-        except Exception as e:
-            db.session.rollback()
-            return {"errors": [str(e)]}, 400
+        user_id = session.get('user_id')
+        if user_id:
+            try:
+                password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
+                new_user = User(
+                    name=data['name'],
+                    email=data['email']
+                )
+                new_user.password_hash = password_hash 
+                db.session.add(new_user)
+                db.session.commit()
+                return new_user.to_dict(only=('id', 'name', 'email')), 201
+            except Exception as e:
+                db.session.rollback()
+                return {"errors": [str(e)]}, 400
+        return {'error': 'Unauthorized'}, 401
 
 class UserResource(Resource):
     def get(self, id):
