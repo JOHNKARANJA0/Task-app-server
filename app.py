@@ -25,7 +25,7 @@ migrate = Migrate(app, db)
 
 db.init_app(app)
 
-CORS(app)
+CORS(app, supports_credentials= True)
 
 api = Api(app)
 bcrypt.init_app(app)
@@ -80,22 +80,20 @@ class UsersResource(Resource):
     def post(self):
         data = request.get_json()
         password ='password'
-        user_id = session.get('user_id')
-        if user_id:
-            try:
-                password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
-                new_user = User(
-                    name=data['name'],
-                    email=data['email']
-                )
-                new_user.password_hash = password_hash 
-                db.session.add(new_user)
-                db.session.commit()
-                return new_user.to_dict(only=('id', 'name', 'email')), 201
-            except Exception as e:
-                db.session.rollback()
-                return {"errors": [str(e)]}, 400
-        return {'error': 'Unauthorized'}, 401
+        try:
+            password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
+            new_user = User(
+                name=data['name'],
+                email=data['email']
+            )
+            new_user.password_hash = password_hash 
+            db.session.add(new_user)
+            db.session.commit()
+            return new_user.to_dict(only=('id', 'name', 'email')), 201
+        except Exception as e:
+            db.session.rollback()
+            return {"errors": [str(e)]}, 400
+
 
 class UserResource(Resource):
     def get(self, id):
