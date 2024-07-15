@@ -7,7 +7,7 @@ Task Management App is a web application designed to help users manage their tas
 ## Features
 
 - User authentication (login, logout, session management)
-- User registration
+- User Creation
 - Task management (create, read, update, delete tasks)
 - Assignment management (create, read assignments)
 - Protected routes for authenticated users
