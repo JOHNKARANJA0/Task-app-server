@@ -196,6 +196,23 @@ class AssignmentsResource(Resource):
         except Exception as e:
             db.session.rollback()
             return {"errors": [str(e)]}, 400
+        
+class AssignmentResource(Resource):
+    def get(self, id):
+        assignments = db.session.get(Assignment, id)
+        if assignments:
+            return assignments.to_dict(), 200
+        return {"error": "Assignments not found"}, 404
+    def patch(self, id):
+        assignments = db.session.get(Assignment, id)
+        if assignments:
+            data = request.get_json()
+            assignments.task_id = data.get('task_id', assignments.task_id)
+            assignments.user_id = data.get('user_id', assignments.user_id)
+            assignments.status = data.get('status', assignments.status)
+            db.session.commit()
+            return assignments.to_dict(), 200
+        return {"error": "Task not found"}, 404
 api.add_resource(CheckSession, '/check_session', endpoint='check_session')
 api.add_resource(Login, '/login', endpoint='login')
 api.add_resource(Logout, '/logout', endpoint='logout')
@@ -204,6 +221,7 @@ api.add_resource(UserResource, '/users/<int:id>')
 api.add_resource(TasksResource, '/tasks')
 api.add_resource(TaskResource, '/tasks/<int:id>')
 api.add_resource(AssignmentsResource, '/assignments')
+api.add_resource(AssignmentResource, '/assignments/<int:id>')
 
 if __name__ == "__main__":
     app.run(debug=True)
